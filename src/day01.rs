@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufRead;
 use std::path::PathBuf;
-use std::cmp::max;
+use std::iter::successors;
 
 
 fn read_number(input: &PathBuf) -> anyhow::Result<Vec<i32>> {
@@ -47,16 +47,59 @@ pub fn part_b(input: &PathBuf) -> anyhow::Result<i32> {
     let list1 = read_number(input)?;
 
     // create a variable to store the total fuel needed
-    let mut total_fuel = 0;
-    for fuel in list1 {
-        // assign the remaining fuel to fuel
-        let mut remaining_fuel: i32 = fuel;
-        while remaining_fuel > 0 {
-            let x = max(remaining_fuel / 3 - 2, 0);
-            total_fuel += x;
-            remaining_fuel = x;
-        }
-    }
+    let total_fuel: i32 = list1
+        // create an iterator from the list
+        .iter()
+        // map the calculation function to each element in the iterator,
+        // recursively while the condition is still met
+        .flat_map(|&fuel| // define fuel as what we will refer to the element as
+            // this is the mapping function.
+            // flat_map produce a long "array" instead of the nested "array"
+            // I would get by using map
+             {
+                 // successor will generate a sequence starting with fuel
+                 successors(Some(fuel), |&remaining| {
+                     // with each member of the sequence being calculated using
+                     let next = remaining / 3 - 2;
+                     // this is the stopping condition
+                     (next > 0).then_some(next)
+                 }).skip(1) // this will skip adding the firs element to the iterator output list
+             })
+        .sum(); // we sum the total fuel of all the fuel partial sums
 
     Ok(total_fuel)
+}
+
+
+#[cfg(test)]
+mod tests{
+    use super::*;
+
+    #[test]
+    fn test_part_a() {
+        // Arrange
+        let input_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("input")
+            .join("day01.txt");
+
+        // Act
+        let result = part_a(&input_path).expect("part_a failed"); // Extract the `i32`
+
+        // Assert
+        assert_eq!(result, 3348430);
+    }
+
+    #[test]
+    fn test_part_b() {
+        // Arrange
+        let input_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .join("input")
+            .join("day01.txt");
+
+        // Act
+        let result = part_b(&input_path).expect("part_a failed"); // Extract the `i32`
+
+        // Assert
+        assert_eq!(result, 5019767);
+    }
 }
